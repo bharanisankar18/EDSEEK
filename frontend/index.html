@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scholarship Hunter</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Scholarship Hunter</h1>
+    <p>Find Tamil Nadu and all-India scholarships you qualify for.</p>
+    <p id="mode" class="mode"></p>
+    <nav>
+      <a href="#profile">1. Your details</a>
+      <a href="#results">2. Results</a>
+      <a href="#chat">3. Ask</a>
+      <a href="#doc">4. Check certificate</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="profile">
+      <h2>1. Your details</h2>
+      <p class="hint">Leave anything you are not sure about — we will mark those schemes as "Maybe".</p>
+      <form id="profile-form">
+        <label>State
+          <select name="state"><option value="">— not sure —</option><option value="TN">Tamil Nadu</option><option value="other">Other state</option></select>
+        </label>
+        <label>Level
+          <select name="level"><option value="">— not sure —</option><option>UG</option><option>PG</option><option>Diploma</option><option>ITI</option></select>
+        </label>
+        <label>Year of study
+          <select name="year" data-type="number"><option value="">— not sure —</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+        </label>
+        <label>Course
+          <select name="course">
+            <option value="">— not sure —</option>
+            <option value="eng-cse">Engineering — CSE / IT</option>
+            <option value="eng-core">Engineering — Civil / Mech / EEE / ECE / Chemical</option>
+            <option value="eng-other">Engineering — other branch</option>
+            <option value="medicine">Medicine</option>
+            <option value="law">Law</option>
+            <option value="mba">MBA</option>
+            <option value="arts-science">Arts &amp; Science</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>Gender
+          <select name="gender"><option value="">— not sure —</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select>
+        </label>
+        <label>Community
+          <select name="community"><option value="">— not sure —</option><option>SC</option><option>ST</option><option>SCC</option><option>BC</option><option>MBC</option><option>DNC</option><option value="OC">OC / General</option></select>
+        </label>
+        <label>Family income (₹ lakh per year)
+          <input name="income" type="number" step="0.1" min="0" placeholder="e.g. 1.8" data-type="number">
+        </label>
+        <label>Class 12 %
+          <input name="marks12" type="number" step="0.1" min="0" max="100" placeholder="e.g. 85" data-type="number">
+        </label>
+        <label>Above 80th percentile of your Class 12 board?
+          <select name="above80" data-type="bool"><option value="">— not sure —</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </label>
+        <label>Studied Class 6–12 in a TN Government school?
+          <select name="govtSchool" data-type="bool"><option value="">— not sure —</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </label>
+        <label>First graduate in your family?
+          <select name="firstGrad" data-type="bool"><option value="">— not sure —</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </label>
+        <label>Admission quota
+          <select name="quota"><option value="">— not sure —</option><option value="govt">Government counselling</option><option value="govt75">7.5% govt-school quota</option><option value="management">Management</option></select>
+        </label>
+        <label>College type
+          <select name="collegeType"><option value="">— not sure —</option><option value="govt">Government</option><option value="aided">Aided</option><option value="self">Self-financing</option></select>
+        </label>
+        <label>Staying in the college hostel?
+          <select name="hostel" data-type="bool"><option value="">— not sure —</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </label>
+        <label>Disability 40% or more?
+          <select name="disability" data-type="bool"><option value="">— not sure —</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </label>
+        <label>Family hardship
+          <select name="hardship"><option value="">— not sure —</option><option value="none">None</option><option value="orphan">Orphan</option><option value="parent-lost">Lost a parent</option><option value="parent-ill">Parent critically ill</option></select>
+        </label>
+        <label>Studying in Tamil-medium classes?
+          <select name="tamilMedium" data-type="bool"><option value="">— not sure —</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </label>
+        <div class="buttons">
+          <button type="submit">Find my scholarships</button>
+          <button type="button" id="reset">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="results">
+      <h2>2. Results</h2>
+      <p id="summary" class="hint">Fill your details and press "Find my scholarships".</p>
+      <div id="eligible"></div>
+      <div id="maybe"></div>
+      <details id="not-wrap" hidden><summary>Not eligible</summary><div id="not"></div></details>
+    </section>
+
+    <section id="chat">
+      <h2>3. Ask Scholarship Hunter</h2>
+      <p class="hint">Chat in English or Tamil. Your answers fill the form above.</p>
+      <div id="log" aria-live="polite"></div>
+      <form id="chat-form">
+        <input id="chat-input" autocomplete="off" placeholder="e.g. I am a 1st year CSE girl from a govt school">
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <section id="doc">
+      <h2>4. Check a certificate</h2>
+      <p class="hint">Upload a photo. We check the date, seal, name and clarity. The photo is sent to Google Gemini for reading.</p>
+      <form id="doc-form">
+        <label>Certificate type
+          <select name="docType">
+            <option>Income certificate</option>
+            <option>Community certificate</option>
+            <option>First Graduate certificate</option>
+            <option>Class 12 marksheet</option>
+            <option>Disability certificate</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>Your name (as in college records)
+          <input name="studentName" placeholder="e.g. Priya S">
+        </label>
+        <label>Photo or PDF
+          <input name="file" type="file" accept="image/*,application/pdf" required>
+        </label>
+        <div class="buttons"><button type="submit">Check</button></div>
+      </form>
+      <div id="doc-result"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Eligibility is decided by fixed rules from our dataset. Always confirm on the official site before applying.</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

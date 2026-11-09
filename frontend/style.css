@@ -1,0 +1,44 @@
+/* Deliberately plain v1 styling — real design comes later. */
+:root {
+  --text: #1a1a1a;
+  --muted: #666;
+  --bg: #fff;
+  --line: #ddd;
+  --yes: #1a7f37;
+  --maybe: #9a6700;
+  --no: #888;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--text); background: var(--bg); }
+header, main, footer { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+h1 { margin: 24px 0 4px; }
+h2 { margin-top: 40px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+nav { display: flex; gap: 16px; flex-wrap: wrap; }
+.hint, footer { color: var(--muted); font-size: 14px; }
+.mode { font-size: 14px; }
+.mode.offline { color: var(--maybe); }
+
+form label { display: block; margin: 10px 0; }
+input, select, button { font: inherit; padding: 6px 8px; }
+form label input, form label select { display: block; width: 100%; margin-top: 2px; }
+.buttons { display: flex; gap: 8px; margin-top: 16px; }
+button { cursor: pointer; }
+
+.card { border: 1px solid var(--line); padding: 12px; margin: 12px 0; }
+.card h3 { margin: 0 0 4px; font-size: 17px; }
+.card p { margin: 4px 0; }
+.badge { font-weight: 600; }
+.eligible .badge { color: var(--yes); }
+.maybe .badge { color: var(--maybe); }
+.not_eligible .badge { color: var(--no); }
+.warn { color: var(--maybe); }
+.card .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+#log { border: 1px solid var(--line); min-height: 120px; max-height: 420px; overflow-y: auto; padding: 8px; }
+.msg { margin: 6px 0; white-space: pre-wrap; }
+.msg.user { text-align: right; }
+.msg.user span { background: #eef; padding: 4px 8px; display: inline-block; }
+.msg.error { color: #b00; }
+#chat-form { display: flex; gap: 8px; margin-top: 8px; }
+#chat-input { flex: 1; }
+footer { margin-top: 48px; padding-bottom: 32px; }
