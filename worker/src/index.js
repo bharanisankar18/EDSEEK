@@ -17,10 +17,13 @@ const SYSTEM_PROMPT = `You are Scholarship Hunter, an assistant that helps India
 find scholarships they qualify for.
 1. Build the student's profile first: state, course and year, gender, community, family income,
    Class 12 %, government school (Class 6-12), first graduate, quota, college type, hostel, disability,
-   hardship. Ask at most 2 questions at a time. Save answers with set_profile. If unknown, continue.
-2. ALWAYS call find_scholarships to decide eligibility. Never invent a scholarship, amount, deadline or rule.
-3. Show open + eligible first. For each: name, amount, one-line reason, deadline status, documents,
-   official link. Say "Maybe" items need which detail.
+   hardship. Ask at most 2 questions at a time. If unknown, continue.
+   FIRST save EVERY detail the student already gave (in any language) with ONE set_profile call —
+   e.g. "முதலாம் ஆண்டு மெக்கானிக்கல் மாணவன், அரசுப் பள்ளி, வருமானம் 2 லட்சம்" →
+   {year:1, level:"UG", course:"eng-core", gender:"male", govtSchool:true, income:2}. Never ask again for a saved detail.
+2. Eligibility comes ONLY from set_profile / find_scholarships results. Never invent a scholarship, amount, deadline or rule.
+3. Show open + eligible first: name, amount, one-line reason, deadline. Use scholarship_details only when the
+   student asks for documents or how to apply. For "Maybe" items, ask the details listed in ask_next.
 4. If notes say VERIFY or CONFLICT, tell the student to confirm on the official site.
 5. Short, friendly, phone-sized replies. Reply in Tamil if the student writes in Tamil.
 Plain text only (no markdown tables). Today is ${new Date().toISOString().slice(0, 10)}.`;
@@ -33,7 +36,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "set_profile",
-      description: "Save or update fields of the student's profile. Only include fields the student actually told you.",
+      description: "Save profile fields the student told you. Returns the updated eligibility results — no need to call find_scholarships after it.",
       parameters: {
         type: "object",
         properties: {
@@ -87,25 +90,33 @@ function cleanProfile(input) {
   return out;
 }
 
+// Compact on purpose: Groq free tier allows ~8k tokens/minute.
+const cut = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + "…" : s);
+function results(state) {
+  state.showResults = true;
+  const list = findScholarships(schemes, state.profile);
+  const pick = (r) => ({
+    id: r.id, name: cut(r.scheme.name, 60), reason: cut(r.reason, 120),
+    amount: cut(r.scheme.amount, 70), deadline: r.status.label, verify: r.verify || undefined,
+  });
+  const eligible = list.filter((r) => r.result === "eligible");
+  const maybe = list.filter((r) => r.result === "maybe");
+  const missing = [...new Set(maybe.flatMap((r) => r.missing))].map((f) => PROFILE_FIELDS[f]);
+  return {
+    eligible: eligible.map(pick),
+    maybe: maybe.slice(0, 6).map(pick),
+    more_maybe: Math.max(0, maybe.length - 6),
+    ask_next: missing.slice(0, 4),
+    not_eligible_count: list.length - eligible.length - maybe.length,
+  };
+}
+
 function runTool(name, args, state) {
   if (name === "set_profile") {
     state.profile = { ...state.profile, ...cleanProfile(args) };
-    return { saved: true, profile: state.profile };
+    return { saved: true, ...results(state) };
   }
-  if (name === "find_scholarships") {
-    state.showResults = true;
-    const list = findScholarships(schemes, state.profile);
-    const pick = (r) => ({
-      id: r.id, name: r.scheme.name, result: r.result, reason: r.reason,
-      amount: r.scheme.amount, deadline: r.status.label, verify: r.verify || undefined,
-      missing: r.missing.length ? r.missing.map((f) => PROFILE_FIELDS[f]) : undefined,
-    });
-    return {
-      eligible: list.filter((r) => r.result === "eligible").map(pick),
-      maybe: list.filter((r) => r.result === "maybe").map(pick),
-      not_eligible_count: list.filter((r) => r.result === "not_eligible").length,
-    };
-  }
+  if (name === "find_scholarships") return results(state);
   if (name === "scholarship_details") {
     const s = schemes.find((x) => x.id === args.id);
     if (!s) return { error: `No scheme with id ${args.id}` };
@@ -130,15 +141,34 @@ async function chat(body, env) {
     ...history,
   ];
 
-  for (let step = 0; step < 6; step++) {
-    const res = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${env.GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: env.GROQ_MODEL || "llama-3.3-70b-versatile",
-        messages, tools: TOOLS, tool_choice: "auto", temperature: 0.3, max_tokens: 900,
-      }),
-    });
+  const model = env.GROQ_MODEL || "openai/gpt-oss-120b";
+  const callGroq = () => fetch(GROQ_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${env.GROQ_API_KEY}` },
+    body: JSON.stringify({
+      model, messages, tools: TOOLS, tool_choice: "auto", temperature: 0.3, max_tokens: 1500,
+      ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: env.GROQ_REASONING || "medium" } : {}),
+    }),
+  });
+
+  for (let step = 0; step < 4; step++) {
+    let res = await callGroq();
+    // Free-tier limit: if Groq says "try again in ≤ 20 s", wait once and retry.
+    if (res.status === 429) {
+      const wait = Number(res.headers.get("retry-after"));
+      if (wait > 0 && wait <= 20) {
+        await new Promise((r) => setTimeout(r, wait * 1000));
+        res = await callGroq();
+      }
+    }
+    // Model produced a malformed tool call (Groq "tool_use_failed") → try once more.
+    if (res.status === 400) {
+      const detail = await res.clone().text();
+      if (detail.includes("tool_use_failed")) {
+        console.warn("groq_tool_use_failed_retry", detail.slice(0, 200));
+        res = await callGroq();
+      }
+    }
     if (!res.ok) {
       const detail = await res.text();
       console.error("groq_error", res.status, detail.slice(0, 500));
@@ -189,22 +219,36 @@ async function checkDoc(body, env) {
     return json({ error: "Send a JPG, PNG, WEBP or PDF" }, 400);
   if (image.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: "File too large (max 4 MB)" }, 413);
 
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = env.GEMINI_MODEL || "gemini-flash-lite-latest";
   const prompt = `This is an Indian student's ${docType} uploaded for a scholarship application (Tamil Nadu).
 Read it carefully and fill the JSON. List real problems only: expired or old date, missing seal/signature,
 blurred or cut-off parts, wrong document type, name unclear. Do not guess values you cannot see.`;
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  // 25 s timeout: the bigger Gemini models sometimes hang for minutes on the free tier.
+  const callGemini = (m) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
     method: "POST",
+    signal: AbortSignal.timeout(25000),
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: image } }] }],
       generationConfig: { responseMimeType: "application/json", responseSchema: DOC_SCHEMA, temperature: 0 },
     }),
+  }).catch((err) => {
+    console.warn("gemini_timeout", m, err?.name);
+    return new Response("timeout", { status: 504 });
   });
+
+  let res = await callGemini(model);
+  // Busy (503), free-tier limit (429) or timeout (504) → try the fallback model once.
+  const fallback = env.GEMINI_FALLBACK_MODEL || "gemini-flash-latest";
+  if ([429, 503, 504].includes(res.status) && fallback !== model) {
+    console.warn("gemini_fallback", model, res.status);
+    res = await callGemini(fallback);
+  }
   if (!res.ok) {
     console.error("gemini_error", res.status, (await res.text()).slice(0, 500));
-    return json({ error: res.status === 429 ? "Certificate checker is busy. Try again in a minute." : "Certificate check failed. Try again." }, 502);
+    const busy = [429, 503, 504].includes(res.status);
+    return json({ error: busy ? "Certificate checker is busy. Try again in a minute." : "Certificate check failed. Try again." }, 502);
   }
   let doc;
   try {
@@ -221,8 +265,9 @@ blurred or cut-off parts, wrong document type, name unclear. Do not guess values
     const ageDays = (today - new Date(doc.issue_date)) / 86400000;
     if (ageDays > 365) issues.push(`Income certificate issued ${doc.issue_date} — most schemes need one from the last 12 months`);
   }
-  if (!doc.has_seal_or_signature) issues.push("No seal or signature visible");
-  if (!doc.is_readable) issues.push("Photo is not clear enough to read");
+  const mentioned = (re) => issues.some((i) => re.test(i));
+  if (!doc.has_seal_or_signature && !mentioned(/seal|signature/i)) issues.push("No seal or signature visible");
+  if (!doc.is_readable && !mentioned(/blur|clear|read/i)) issues.push("Photo is not clear enough to read");
   if (studentName && doc.name_on_doc && normName(studentName) !== normName(doc.name_on_doc))
     issues.push(`Name on certificate "${doc.name_on_doc}" does not match "${studentName}" — check spelling / initials`);
 

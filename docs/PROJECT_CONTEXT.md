@@ -1,7 +1,7 @@
 # Scholarship Hunter — Project Context
 
 Everything decided so far, so you (or any coding assistant in VS Code) can continue without the original chat.
-Last updated: 9 Nov 2026.
+Last updated: 9 Nov 2026 (models updated after first live test).
 
 ## 1. What we are building
 
@@ -22,7 +22,8 @@ find scholarships they qualify for, check their documents, and never miss a dead
 | Scope (v1) | Tamil Nadu students after Class 12 + all-India central/private schemes they can apply to |
 | Interface order | **Website first**, then WhatsApp, then other apps |
 | Automation tools | Tried n8n (no access) and Make.com (free plan can't build via MCP, AI provider limits). **Not using them for v1** |
-| AI provider | **Not Claude / Claude API.** Use **free** providers: **Groq (Llama 3.3 70B)** for the chat agent, **Google Gemini Flash** (free tier) for document image checks |
+| AI provider | **Not Claude / Claude API.** Use **free** providers: **Groq `openai/gpt-oss-120b`** for the chat agent (Llama 3.3 70B was retired; Qwen tested — broke tool calls), **Gemini `gemini-flash-lite-latest`** for document checks (fallback `gemini-flash-latest`; bigger models hang or are "no longer available to new users") |
+| Free-tier limits | Groq: 8,000 tokens/min → `set_profile` returns results directly, compact tool output, auto-retry. Gemini: 25 s timeout + fallback model |
 | Backend | **Cloudflare Workers** (free, 100k requests/day) — holds API keys, runs the agent + tools |
 | Hosting | Cloudflare Pages or GitHub Pages (free) |
 | Data | `data/scholarships.json` (25 schemes) — later Google Sheets / Supabase |
@@ -38,7 +39,7 @@ Student (browser: index.html)
    │  chat message / certificate photo
    ▼
 Cloudflare Worker  (env: GROQ_API_KEY, GEMINI_API_KEY)
-   ├── Groq · Llama 3.3 70B  (OpenAI-compatible, tool calling)
+   ├── Groq · gpt-oss-120b  (OpenAI-compatible, tool calling)
    │      tools: set_profile(fields)        → update student profile
    │             find_scholarships()        → rule engine over scholarships.json
    │             scholarship_details(id)    → full row (documents, links, notes)

@@ -5,8 +5,9 @@ compatibility_date = "2025-09-01"
 [vars]
 # Set to your Pages URL after deploying, e.g. "https://scholarship-hunter.pages.dev"
 ALLOWED_ORIGIN = "*"
-GROQ_MODEL = "llama-3.3-70b-versatile"
-GEMINI_MODEL = "gemini-2.5-flash"
+GROQ_MODEL = "openai/gpt-oss-120b"
+GEMINI_MODEL = "gemini-flash-lite-latest"
+GEMINI_FALLBACK_MODEL = "gemini-flash-latest"
 
 [dev]
 ip = "127.0.0.1"

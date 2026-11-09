@@ -134,8 +134,17 @@ function renderResults() {
 
 // ---------- chat ----------
 
+// AI replies may contain **bold** / *italic* — render bold safely (no innerHTML), drop stray asterisks.
+function formatReply(text) {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? el("b", {}, part) : part.replace(/(^|\s)\*(\S[^*]*?)\*/g, "$1$2")));
+}
+
+function setReply(node, text) {
+  node.replaceChildren(...formatReply(text));
+}
+
 function addMsg(role, text) {
-  const m = el("div", { class: `msg ${role}` }, role === "user" ? el("span", {}, text) : text);
+  const m = el("div", { class: `msg ${role}` }, role === "user" ? el("span", {}, text) : formatReply(text));
   $("#log").append(m);
   $("#log").scrollTop = $("#log").scrollHeight;
   return m;
@@ -164,7 +173,7 @@ async function sendChat(e) {
     const data = await res.json();
     if (data.profile) writeProfile(data.profile);
     if (!res.ok) throw new Error(data.error || "Chat failed");
-    thinking.textContent = data.reply;
+    setReply(thinking, data.reply);
     chatHistory.push({ role: "assistant", content: data.reply });
     renderResults();
     if (data.showResults) addMsg("hint", "↑ Results updated in section 2.");
