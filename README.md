@@ -53,6 +53,21 @@ npx wrangler deploy
 Put the printed `*.workers.dev` URL into `frontend/config.js` (PROD_API). Deploy the **project root** to Cloudflare Pages
 (open `/frontend/`), then set `ALLOWED_ORIGIN` in `worker/wrangler.toml` to your Pages URL and redeploy the Worker.
 
+## How we work (branches & pull requests)
+
+| Branch | Used for |
+|---|---|
+| `main` | The live, deployed version. Never edit directly. |
+| `dev` | Finished work waiting to go live. |
+| feature branch (e.g. `rush`) | One change at a time. Opened as a pull request into `dev`. |
+
+1. Start from the latest `dev`: `git checkout dev` → `git pull`
+2. Make a branch: `git checkout -b <branch-name>`
+3. Change files → `git add .` → `git commit -m "what changed"` → `git push -u origin <branch-name>`
+4. On GitHub: open a **Pull Request** into `dev`. The admin reviews and approves.
+5. Merge the pull request, then delete the branch.
+6. When `dev` is tested, open a pull request from `dev` into `main` to go live.
+
 ## Adding or changing a scheme
 
 Edit `data/scholarships.json`, then add / update its rule in `RULES` inside `shared/engine.js`, and add a test.
