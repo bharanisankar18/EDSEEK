@@ -297,6 +297,13 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders() });
 
     try {
+      if (pathname === "/" && request.method === "GET") {
+        return new Response(
+          "Scholarship Hunter API is running.\n\nThis is the server, not the website.\n" +
+          "Open the website: in VS Code right-click frontend/index.html -> Show Preview\n" +
+          "(or http://127.0.0.1:5500/frontend/index.html)\n\nHealth check: /api/health\n",
+          { headers: { "content-type": "text/plain; charset=utf-8", ...corsHeaders() } });
+      }
       if (pathname === "/api/health") return json({ ok: true, groq: !!env.GROQ_API_KEY, gemini: !!env.GEMINI_API_KEY, schemes: schemes.length });
       if (request.method !== "POST") return json({ error: "Not found" }, 404);
 
