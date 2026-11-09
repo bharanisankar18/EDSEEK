@@ -1,3 +1,18 @@
+# Secrets — API keys (NEVER upload)
 .dev.vars
+.env
+.env.*
+!.dev.vars.example
+
+# Tools / build caches
 node_modules/
 .wrangler/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Windows / Mac junk files
+Thumbs.db
+desktop.ini
+.DS_Store
