@@ -4,20 +4,16 @@ AI agent that finds scholarships for Tamil Nadu college students — free stack 
 
 ## Open in VS Code
 
-1. Unzip this folder.
-2. VS Code → **File → Open Folder…** → select `scholarship-hunter`.
-3. Read `docs/PROJECT_CONTEXT.md` — it has every decision, the architecture, rules and roadmap.
+1. VS Code → **File → Open Folder…** → select `D:\EDSEEK` (the project root).
+2. Read `docs/PROJECT_CONTEXT.md` — it has every decision, the architecture, rules and roadmap.
 
-## Start Git (work on a dev branch)
+## Git (work on the `dev` branch)
+
+Git is already set up: `main` = deployed version, `dev` = work in progress.
 
 ```bash
-git init
-git add .
-git commit -m "Project context and scholarship dataset"
-git branch -M main
-git checkout -b dev
-# create an empty repo on GitHub, then:
-git remote add origin https://github.com/<your-username>/scholarship-hunter.git
+# create an empty repo on GitHub (no README), then:
+git remote add origin https://github.com/<your-username>/edseek.git
 git push -u origin main
 git push -u origin dev
 ```
