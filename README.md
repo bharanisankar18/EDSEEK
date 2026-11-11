@@ -1,4 +1,4 @@
-# Scholarship Hunter
+SCHOLARSHIP HUNTER APP
 
 AI agent that finds scholarships for Tamil Nadu college students — free stack (Groq + Gemini + Cloudflare).
 
